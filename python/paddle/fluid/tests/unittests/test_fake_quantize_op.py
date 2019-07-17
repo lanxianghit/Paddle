@@ -24,12 +24,12 @@ class TestFakeQuantizeOp(OpTest):
     def setUp(self):
         self.op_type = "fake_quantize_abs_max"
         self.attrs = {'bit_length': 8}
-        self.inputs = {'X': np.random.random((124, 240)).astype("float32"), }
-        scale = np.max(np.abs(self.inputs['X'])).astype("float32")
+        self.inputs = {'X': np.random.random((124, 240)).astype("float64"), }
+        scale = np.max(np.abs(self.inputs['X'])).astype("float64")
         self.outputs = {
             'Out': np.round(self.inputs['X'] / scale * (
                 (1 << (self.attrs['bit_length'] - 1)) - 1)),
-            'OutScale': np.array(scale).astype("float32"),
+            'OutScale': np.array(scale).astype("float64"),
         }
 
     def test_check_output(self):
@@ -41,11 +41,11 @@ class TestFakeChannelWiseQuantizeOp(OpTest):
         self.op_type = "fake_channel_wise_quantize_abs_max"
         self.attrs = {'bit_length': 8}
         self.inputs = {
-            'X': np.random.random((4, 3, 64, 64)).astype("float32"),
+            'X': np.random.random((4, 3, 64, 64)).astype("float64"),
         }
         scales = []
         for i in range(self.inputs['X'].shape[0]):
-            scales.append(np.max(np.abs(self.inputs['X'][i])).astype("float32"))
+            scales.append(np.max(np.abs(self.inputs['X'][i])).astype("float64"))
         outputs = self.inputs['X'].copy()
         for i, scale in enumerate(scales):
             outputs[i] = np.round(outputs[i] / scale * (
@@ -53,7 +53,7 @@ class TestFakeChannelWiseQuantizeOp(OpTest):
 
         self.outputs = {
             'Out': outputs,
-            'OutScale': np.array(scales).astype("float32"),
+            'OutScale': np.array(scales).astype("float64"),
         }
 
     def test_check_output(self):
@@ -69,15 +69,15 @@ class TestFakeQuantizeRangeAbsMaxOp(OpTest):
             'is_test': False
         }
         x = (np.random.random((8, 16, 7, 7)) - 0.5) * 10
-        x = x.astype("float32")
+        x = x.astype("float64")
         self.inputs = {
             'X': x,
             'Iter': np.zeros(1).astype("int64"),
-            'InScale': np.zeros(1).astype("float32")
+            'InScale': np.zeros(1).astype("float64")
         }
-        scale = np.max(np.abs(self.inputs['X'])).astype("float32")
+        scale = np.max(np.abs(self.inputs['X'])).astype("float64")
 
-        out_scales = np.zeros(self.attrs['window_size']).astype("float32")
+        out_scales = np.zeros(self.attrs['window_size']).astype("float64")
         out_scales[0] = scale
         self.outputs = {
             'Out': np.round(self.inputs['X'] / scale * (
@@ -94,21 +94,21 @@ class TestMovingAverageAbsMaxScaleOp(OpTest):
     def setUp(self):
         self.op_type = "moving_average_abs_max_scale"
         self.attrs = {'moving_rate': float(0.9), 'is_test': False}
-        accum = np.zeros(1).astype("float32")
+        accum = np.zeros(1).astype("float64")
         accum[0] = 1
-        state = np.zeros(1).astype("float32")
+        state = np.zeros(1).astype("float64")
         state[0] = 1
         self.inputs = {
-            'X': np.random.random((8, 16, 7, 7)).astype("float32"),
+            'X': np.random.random((8, 16, 7, 7)).astype("float64"),
             'InAccum': accum,
             'InState': state,
         }
 
-        out_accum = np.zeros(1).astype("float32")
-        out_state = np.zeros(1).astype("float32")
-        out_scale = np.zeros(1).astype("float32")
+        out_accum = np.zeros(1).astype("float64")
+        out_state = np.zeros(1).astype("float64")
+        out_scale = np.zeros(1).astype("float64")
         out_accum[0] = self.attrs['moving_rate'] * accum[0] + np.max(
-            np.abs(self.inputs['X'])).astype("float32")
+            np.abs(self.inputs['X'])).astype("float64")
         out_state[0] = self.attrs['moving_rate'] * state[0] + 1
         out_scale = out_accum / out_state
         self.outputs = {
@@ -131,21 +131,21 @@ class TestFakeQuantizeRangeAbsMaxOp2(OpTest):
             'is_test': True
         }
         x = (np.random.random((8, 16, 7, 7)) - 0.5) * 10
-        x = x.astype("float32")
-        scale = np.max(np.abs(x)).astype("float32") - 1.0
-        out_scales = np.zeros(self.attrs['window_size']).astype("float32")
+        x = x.astype("float64")
+        scale = np.max(np.abs(x)).astype("float64") - 1.0
+        out_scales = np.zeros(self.attrs['window_size']).astype("float64")
         out_scales[0] = scale
 
         self.inputs = {
             'X': x,
             'Iter': np.zeros(1).astype("int64"),
-            'InScale': scale.astype("float32")
+            'InScale': scale.astype("float64")
         }
         xs = np.clip(x, -scale, scale)
         qs = np.round(xs / scale * ((1 << (self.attrs['bit_length'] - 1)) - 1))
         self.outputs = {
             'Out': qs,
-            'OutScale': scale.astype("float32"),
+            'OutScale': scale.astype("float64"),
             'OutScales': out_scales,
         }
 
@@ -161,24 +161,24 @@ class TestMovingOpBase(OpTest):
             'moving_rate': float(0.9),
             'is_test': False
         }
-        accum = np.zeros(1).astype("float32")
+        accum = np.zeros(1).astype("float64")
         accum[0] = 1
-        state = np.zeros(1).astype("float32")
+        state = np.zeros(1).astype("float64")
         state[0] = 1
-        scale = np.zeros(1).astype("float32")
+        scale = np.zeros(1).astype("float64")
         scale[0] = 0.001
         self.inputs = {
-            'X': np.random.random((8, 16, 7, 7)).astype("float32"),
+            'X': np.random.random((8, 16, 7, 7)).astype("float64"),
             'InScale': scale,
             'InAccum': accum,
             'InState': state,
         }
 
-        out_accum = np.zeros(1).astype("float32")
-        out_state = np.zeros(1).astype("float32")
-        out_scale = np.zeros(1).astype("float32")
+        out_accum = np.zeros(1).astype("float64")
+        out_state = np.zeros(1).astype("float64")
+        out_scale = np.zeros(1).astype("float64")
         out_accum[0] = self.attrs['moving_rate'] * accum[0] + np.max(
-            np.abs(self.inputs['X'])).astype("float32")
+            np.abs(self.inputs['X'])).astype("float64")
         out_state[0] = self.attrs['moving_rate'] * state[0] + 1
         out_scale = out_accum / out_state
         out_data = self.calc_output(out_scale)
